@@ -1,9 +1,11 @@
 pipeline {
     agent any
+
     environment {
         DOCKERHUB_CREDENTIALS = credentials('docker-access-token')
         SCANNER_HOME= tool 'sonar-scanner'
     }
+
     tools {
         jdk 'jdk17'
         maven 'maven3'
@@ -34,7 +36,7 @@ pipeline {
         stage('Running Trivy File System Scan') {
             steps {
                 echo 'Generating Trivy FS Scan Report....'
-                sh "trivy fs --format table -o trivy-fs-html . "
+                sh "trivy fs --format table -o trivy-fs-report.html . "
             }
         }
 
@@ -42,7 +44,7 @@ pipeline {
             steps {
                 echo 'Running SonarQube Scan....'
                 withSonarQubeEnv('sonar'){
-                    sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Corporate-Based-Pipeline -Dsonar.projectName=Corporate-Based-Pipeline" 
+                    sh "$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=Corporate-Based-Pipeline -Dsonar.projectName=Corporate-Based-Pipeline -Dsonar.java.binaries=." 
                 }
             }
         }
@@ -62,7 +64,7 @@ pipeline {
             }
         }
         
-        stage('Publish To Nexus') {
+        stage('Publish Artifact to Nexus') {
             steps {
                withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'jdk17', maven: 'maven3', mavenSettingsConfig: '', traceability: true) {
                     sh "mvn deploy"
@@ -87,7 +89,7 @@ pipeline {
                 echo 'Building the Docker Image From Dockerfile'
                 script {
                     env.IMAGE_TAG = "v0.${env.BUILD_NUMBER}"
-                    sh "docker build -t devopskarannegi/yelp-camp-deployment:v0.${env.BUILD_NUMBER} . "
+                    sh "docker build -t devopskarannegi/corporate-based-pipeline:v0.${env.BUILD_NUMBER} . "
                 }
             }
         }
@@ -96,14 +98,14 @@ pipeline {
             steps {
                 echo 'Scanning Docker Image with Trivy'
                 script{
-                    sh "trivy image --format table -o trivy-image-html devopskarannegi/yelp-camp-deployment:${env.IMAGE_TAG}"
+                    sh "trivy image --format table -o trivy-image-report.html devopskarannegi/corporate-based-pipeline:${env.IMAGE_TAG}"
                 }
             }
         }
         stage('Docker Image test') {
             steps{
                 script {
-                    sh "docker run -d -p 3000:3000 --name test-container devopskarannegi/yelp-camp-deployment:${env.IMAGE_TAG}"
+                    sh "docker run -d -p 3000:8080 --name test-container devopskarannegi/corporate-based-pipeline:${env.IMAGE_TAG}"
                     sh 'sleep 10'
                     sh "curl -f http://localhost:3000 || exit 1"
                 }
@@ -115,7 +117,7 @@ pipeline {
                 script {
                     echo 'Pushing the Docker Image to Docker Hub'
                     sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin' 
-                    sh "docker push devopskarannegi/yelp-camp-deployment:${IMAGE_TAG}"
+                    sh "docker push devopskarannegi/corporate-based-pipeline:${IMAGE_TAG}"
                     sh 'docker logout'
                 }
             }
@@ -124,8 +126,8 @@ pipeline {
             steps {
                 echo "Deploying the Application to Kubernetes Cluster"
                 withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-token', namespace: 'webapp', restrictKubeConfigAccess: false, serverUrl: 'https://10.0.0.5:6443') {
-                sh "kubectl apply -f dss.yml"
-                sleep 200 
+                sh "kubectl apply -f deployment-service.yml"
+                sleep 60
             }
             }
         }
@@ -171,7 +173,7 @@ pipeline {
                     from: 'jenkins@example.com',
                     replyTo: 'jenkins@example.com',
                     mimeType: 'text/html',
-                    attachmentsPattern: 'trivy-image-report.html,trivy-fs-html'
+                    attachmentsPattern: 'trivy-image-report.html,trivy-fs-report.html'
                 )
             } 
         }
