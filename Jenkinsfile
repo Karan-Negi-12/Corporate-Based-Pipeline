@@ -105,7 +105,7 @@ pipeline {
         stage('Docker Image test') {
             steps{
                 script {
-                    sh "docker run -d -p 3000:8080 --name test-container devopskarannegi/corporate-based-pipeline:${env.IMAGE_TAG}"
+                    sh "docker run -d -p 3000:8080 --name test-container-maven devopskarannegi/corporate-based-pipeline:${env.IMAGE_TAG}"
                     sh 'sleep 10'
                     sh "curl -f http://localhost:3000 || exit 1"
                 }
@@ -145,7 +145,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning up the workspace...'
-            sh 'docker rm -f test-container || true'
+            sh 'docker rm -f test-container-maven || true'
             script {
                 def jobName = env.JOB_NAME
                 def buildNumber = env.BUILD_NUMBER
