@@ -125,18 +125,18 @@ pipeline {
         stage('Deploy to Kubernetes Cluster') {
             steps {
                 echo "Deploying the Application to Kubernetes Cluster"
-                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-token', namespace: 'webapp', restrictKubeConfigAccess: false, serverUrl: 'https://10.0.0.5:6443') {
+                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://10.0.0.6:6443') {
                 sh "kubectl apply -f deployment-service.yml"
-                sleep 60
+                sleep 100
             }
             }
         }
         stage('Verifying the deplyoment to Kubernetes Cluster') {
             steps {
                 echo "checking the deployment to Kubernetes Cluster"
-                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-token', namespace: 'webapp', restrictKubeConfigAccess: false, serverUrl: 'https://10.0.0.5:6443') {
-                sh "kubectl get pods -n webapp"
-                sh "kubectl get svc -n webapp"
+                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://10.0.0.6:6443') {
+                sh "kubectl get pods -n webapps"
+                sh "kubectl get svc -n webapps"
             }
             }
         } 
@@ -179,6 +179,7 @@ pipeline {
         }
         success {
             echo 'The pipeline has completed successfully!'
+            archiveArtifacts artifacts: '***', followSymlinks: false
         }
         failure {
             echo 'The pipeline has failed. Please check the logs for details.'
