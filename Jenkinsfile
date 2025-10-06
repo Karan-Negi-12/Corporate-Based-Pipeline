@@ -106,7 +106,7 @@ pipeline {
             steps{
                 script {
                     sh "docker run -d -p 3000:8080 --name test-container-maven devopskarannegi/corporate-based-pipeline:${env.IMAGE_TAG}"
-                    sh 'sleep 10'
+                    sh 'sleep 15'
                     sh "curl -f http://localhost:3000 || exit 1"
                 }
             }
