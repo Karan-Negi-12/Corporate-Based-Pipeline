@@ -126,7 +126,7 @@ pipeline {
             steps {
                 echo "Deploying the Application to Kubernetes Cluster"
                 withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://10.0.0.6:6443') {
-                sh "kubectl apply -f deployment-service.yml"
+                sh "kubectl apply -f deployment-service.yaml"
                 sleep 100
             }
             }
